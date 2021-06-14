@@ -31,6 +31,18 @@ public class Game {
         updatePlayerInfo(new URL("https://www.balldontlie.io/api/v1/stats?game_ids=" + id));
     }
 
+    public Game(int id, int homeScore, int awayScore, int period, Team home, Team away, GameStatus status, String timeInPeriod) throws IOException {
+        this.id = id;
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
+        this.period = period;
+        this.home = home;
+        this.away = away;
+        this.status = status;
+        this.timeInPeriod = timeInPeriod;
+        updatePlayerInfo(new URL("https://www.balldontlie.io/api/v1/stats?game_ids=" + id));
+    }
+
     /**
      * Updates the Game's info.
      */
