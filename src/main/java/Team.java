@@ -13,7 +13,7 @@ import java.util.Scanner;
  */
 public class Team {
 
-    public int id = 0;
+    public int id;
     public String name = "", fullName = "", abbreviation = "", city = "", conference = "", division = "";
 
     /**
@@ -22,24 +22,44 @@ public class Team {
      */
     public Team(int id) throws IOException {
         this.id = id;
-        updateInfo(new URL("https://www.balldontlie.io/api/v1/teams/" + id));
+        updateTeamInfo(new URL("https://www.balldontlie.io/api/v1/teams/" + id));
+    }
+
+    /**
+     * Manually constructs an object of the Team class.
+     * @param id the ID of the Team
+     * @param name the name of the Team
+     * @param fullName the full name of the Team
+     * @param abbreviation the abbreviation of the Team
+     * @param city the city of the Team
+     * @param conference the conference of the Team
+     * @param division the division of the Team
+     */
+    public Team(int id, String name, String fullName, String abbreviation, String city, String conference, String division) {
+        this.id = id;
+        this.name = name;
+        this.fullName = fullName;
+        this.abbreviation = abbreviation;
+        this.city = city;
+        this.conference = conference;
+        this.division = division;
     }
 
     /**
      * Updates the Team's info.
      */
-    private void updateInfo(URL apiUrl) throws IOException {
+    private void updateTeamInfo(URL apiUrl) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
         connection.setRequestMethod("GET");
         connection.connect();
         if (connection.getResponseCode() != 200) {
             System.err.println("Error while updating team info: " + connection.getResponseCode());
         } else {
-            String jsonData = "";
+            StringBuilder jsonData = new StringBuilder();
             Scanner apiStream = new Scanner(apiUrl.openStream());
             while (apiStream.hasNextLine())
-                jsonData += apiStream.nextLine();
-            JSONObject teamObject = new JSONObject(jsonData);
+                jsonData.append(apiStream.nextLine());
+            JSONObject teamObject = new JSONObject(jsonData.toString());
             name = teamObject.getString("name");
             fullName = teamObject.getString("full_name");
             abbreviation = teamObject.getString("abbreviation");
@@ -47,62 +67,6 @@ public class Team {
             conference = teamObject.getString("conference");
             division = teamObject.getString("division");
         }
-    }
-
-    /**
-     * Gets the ID of the Team.
-     * @return the ID of the Team
-     */
-    public int getID() {
-        return id;
-    }
-
-    /**
-     * Gets the short name of the Team.
-     * @return the short name of the Team
-     */
-    public String getShortName() {
-        return name;
-    }
-
-    /**
-     * Gets the full name of the Team.
-     * @return the full name of the Team
-     */
-    public String getFullName() {
-        return fullName;
-    }
-
-    /**
-     * Gets the abbreviation of the Team.
-     * @return the abbreviation of the Team
-     */
-    public String getAbbreviation() {
-        return abbreviation;
-    }
-
-    /**
-     * Gets the city of the Team.
-     * @return the city of the Team
-     */
-    public String getCity() {
-        return city;
-    }
-
-    /**
-     * Gets the conference of the Team.
-     * @return the conference of the Team
-     */
-    public String getConference() {
-        return conference;
-    }
-
-    /**
-     * Gets the division of the Team.
-     * @return the division of the Team
-     */
-    public String getDivision() {
-        return division;
     }
 
 }

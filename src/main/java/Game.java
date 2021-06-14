@@ -1,9 +1,10 @@
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Creates an interface for a single game.
@@ -13,10 +14,12 @@ import java.util.Scanner;
  */
 public class Game {
 
-    public int id = 0, homeScore = 0, awayScore = 0, period = 0;
+    public int id, homeScore = 0, awayScore = 0, period = 0;
     public Team home = null, away = null;
     public GameStatus status;
     public String timeInPeriod = "";
+    public List<Player> players = new ArrayList<>();
+    public HashMap<Player, PlayerStats> playerStats = new LinkedHashMap<>();
 
     /**
      * Constructs an object of the Game class with a given ID.
@@ -25,6 +28,7 @@ public class Game {
     public Game(int id) throws IOException {
         this.id = id;
         updateInfo(new URL("https://www.balldontlie.io/api/v1/games/" + id));
+        updatePlayerInfo(new URL("https://www.balldontlie.io/api/v1/stats?game_ids=" + id));
     }
 
     /**
@@ -37,11 +41,11 @@ public class Game {
         if (connection.getResponseCode() != 200) {
             System.err.println("Error while updating team info: " + connection.getResponseCode());
         } else {
-            String jsonData = "";
+            StringBuilder jsonData = new StringBuilder();
             Scanner apiStream = new Scanner(apiUrl.openStream());
             while (apiStream.hasNextLine())
-                jsonData += apiStream.nextLine();
-            JSONObject gameObject = new JSONObject(jsonData);
+                jsonData.append(apiStream.nextLine());
+            JSONObject gameObject = new JSONObject(jsonData.toString());
             int homeTeamID = gameObject.getJSONObject("home_team").getInt("id");
             int awayTeamID = gameObject.getJSONObject("visitor_team").getInt("id");
             home = new Team(homeTeamID);
@@ -52,6 +56,62 @@ public class Game {
             String status = gameObject.getString("status");
             this.status = getStatus(status);
             timeInPeriod = gameObject.getString("time");
+        }
+    }
+
+    /**
+     * Updates the Players info.
+     */
+    private void updatePlayerInfo(URL apiUrl) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
+        connection.setRequestMethod("GET");
+        connection.connect();
+        if (connection.getResponseCode() != 200) {
+            System.err.println("Error while updating team info: " + connection.getResponseCode());
+        } else {
+            StringBuilder jsonData = new StringBuilder();
+            Scanner apiStream = new Scanner(apiUrl.openStream());
+            while (apiStream.hasNextLine())
+                jsonData.append(apiStream.nextLine());
+            JSONObject jsonObject = new JSONObject(jsonData.toString());
+            JSONArray data = jsonObject.getJSONArray("data");
+            JSONObject meta = jsonObject.getJSONObject("meta");
+            for (int j = 1; j <= meta.getInt("total_pages"); j++) {
+                apiUrl = new URL("https://www.balldontlie.io/api/v1/stats?per_page=1000&game_ids[]=" + id + "&page=" + j);
+                connection = (HttpURLConnection)apiUrl.openConnection();
+                connection.setRequestMethod("GET");
+                connection.connect();
+                if (connection.getResponseCode() != 200) {
+                    System.err.println("Error while updating team info: " + connection.getResponseCode());
+                } else {
+                    jsonData = new StringBuilder();
+                    apiStream = new Scanner(apiUrl.openStream());
+                    while (apiStream.hasNextLine())
+                        jsonData.append(apiStream.nextLine());
+                    jsonObject = new JSONObject(jsonData.toString());
+                    data = jsonObject.getJSONArray("data");
+                    meta = jsonObject.getJSONObject("meta");
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject currentPlayer = data.getJSONObject(i).getJSONObject("player");
+                        int playerID = currentPlayer.getInt("id");
+                        String playerFirstName = currentPlayer.getString("first_name");
+                        String playerLastName = currentPlayer.getString("last_name");
+                        String playerPosition = currentPlayer.getString("position");
+                        JSONObject currentPlayerTeam = data.getJSONObject(i).getJSONObject("team");
+                        int teamID = currentPlayerTeam.getInt("id");
+                        String abv = currentPlayerTeam.getString("abbreviation");
+                        String city = currentPlayerTeam.getString("city");
+                        String conference = currentPlayerTeam.getString("conference");
+                        String division = currentPlayerTeam.getString("division");
+                        String teamFullName = currentPlayerTeam.getString("full_name");
+                        String teamName = currentPlayerTeam.getString("name");
+                        Team playerTeam = new Team(teamID, teamName, teamFullName, abv, city, conference, division);
+                        Player p = new Player(playerID, playerFirstName, playerLastName, playerPosition, playerTeam);
+                        players.add(p);
+                        playerStats.put(p, new PlayerStats(p, data.getJSONObject(i)));
+                    }
+                }
+            }
         }
     }
 
@@ -72,70 +132,6 @@ public class Game {
             case "Final" -> GameStatus.FINAL;
             default -> GameStatus.OTHER;
         };
-    }
-
-    /**
-     * Gets the ID of the Game.
-     * @return the ID of the Game
-     */
-    public int getID() {
-        return id;
-    }
-
-    /**
-     * Gets the Home Score of the Game.
-     * @return the Home Score of the Game
-     */
-    public int getHomeScore() {
-        return homeScore;
-    }
-
-    /**
-     * Gets the Away Score of the Game.
-     * @return the Away Score of the Game
-     */
-    public int getAwayScore() {
-        return awayScore;
-    }
-
-    /**
-     * Gets the Period of the Game.
-     * @return the Period of the Game, or 0 if not in play
-     */
-    public int getPeriod() {
-        return period;
-    }
-
-    /**
-     * Gets the Home Team.
-     * @return the Home Team of the Game
-     */
-    public Team getHome() {
-        return home;
-    }
-
-    /**
-     * Gets the Away Team.
-     * @return the Away Team of the Game
-     */
-    public Team getAway() {
-        return away;
-    }
-
-    /**
-     * Gets the Game Status.
-     * @return the Status of the Game
-     */
-    public GameStatus getStatus() {
-        return status;
-    }
-
-    /**
-     * Gets the Time in Period.
-     * @return the Time in Period as ("0:00"), "" if not in play
-     */
-    public String getTimeInPeriod() {
-        return timeInPeriod;
     }
 
 }
