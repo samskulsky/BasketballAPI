@@ -46,7 +46,7 @@ public class Team {
     }
 
     /**
-     * Updates the Team's info.
+     * Updates the team's info.
      */
     private void updateTeamInfo(URL apiUrl) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
